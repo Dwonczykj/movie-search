@@ -1,0 +1,39 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Movie Search</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { font: 16px system-ui; max-width: 1100px; margin: 0 auto; padding: 24px 16px; }
+  input { width: 100%; box-sizing: border-box; font: inherit; padding: 14px 16px; border-radius: 10px; border: 1px solid #8886; }
+  #meta { color: #888; font-size: 13px; margin: 8px 2px 16px; min-height: 1em; }
+  #grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 16px; }
+  .card img { width: 100%; aspect-ratio: 2/3; object-fit: cover; border-radius: 8px; background: #8883; }
+  .card b { display: block; margin-top: 6px; }
+  .card small { color: #888; }
+  .card p { font-size: 13px; margin: 4px 0 0; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+</style>
+<input id="q" placeholder="Search movies: title, or describe the plot / mood…" autofocus>
+<div id="meta"></div>
+<div id="grid"></div>
+<script>
+  const q = document.getElementById("q"), grid = document.getElementById("grid"), meta = document.getElementById("meta");
+  const esc = (s) => s.replace(/[&<>"]/g, (c) => `&#${c.charCodeAt(0)};`);
+  let timer, ctl;
+  q.addEventListener("input", () => {
+    clearTimeout(timer);
+    timer = setTimeout(run, 300); // 300ms debounce
+  });
+  async function run() {
+    ctl?.abort(); // drop the in-flight request if the user kept typing
+    ctl = new AbortController();
+    const text = q.value.trim();
+    if (!text) { grid.innerHTML = meta.textContent = ""; return; }
+    try {
+      const r = await fetch("/api/search?q=" + encodeURIComponent(text), { signal: ctl.signal });
+      const { results, decision, ms, error } = await r.json();
+      meta.textContent = error ? error : `${results.length} results in ${ms}ms · title-ness ${(decision.title * 100).toFixed(0)}%${decision.genre ? " · genre " + decision.genre : ""}`;
+      grid.innerHTML = results.map((m) => `<div class="card"><img loading="lazy" src="${esc(m.poster)}"><b>${esc(m.title)}</b><small>${m.year} · ★ ${m.rating}</small><p>${esc(m.overview)}</p></div>`).join("");
+    } catch (e) { if (e.name !== "AbortError") meta.textContent = e.message; }
+  }
+</script>
