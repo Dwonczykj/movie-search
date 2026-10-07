@@ -51,6 +51,20 @@ test("compounds the genre multiplier once per flagged genre the movie has", () =
   assert.ok(Math.abs(boosted - baseline * 1.25 ** 2) < 1e-9);
 });
 
+test("applies no genre boost when titleProbability is 1 (fully title-like)", () => {
+  const args = { lexical: [{ index: 0, score: 1 }], semantic: [], titleProbability: 1, limit: 10 };
+  const baseline = fuse({ ...args, flaggedGenres: [], movies: [{ genres: ["Horror"] }] })[0].score;
+  const boosted = fuse({ ...args, flaggedGenres: ["Horror"], movies: [{ genres: ["Horror"] }] })[0].score;
+  assert.ok(Math.abs(boosted - baseline) < 1e-9);
+});
+
+test("applies the maximum 1.5x genre boost when titleProbability is 0", () => {
+  const args = { lexical: [{ index: 0, score: 1 }], semantic: [], titleProbability: 0, limit: 10 };
+  const baseline = fuse({ ...args, flaggedGenres: [], movies: [{ genres: ["Horror"] }] })[0].score;
+  const boosted = fuse({ ...args, flaggedGenres: ["Horror"], movies: [{ genres: ["Horror"] }] })[0].score;
+  assert.ok(Math.abs(boosted - baseline * 1.5) < 1e-9);
+});
+
 test("leaves the fused score unmultiplied when the movie has zero flagged genres", () => {
   const args = { lexical: [{ index: 0, score: 1 }], semantic: [], titleProbability: 0.5, limit: 10, movies: [{ genres: ["Comedy"] }] };
   const baseline = fuse({ ...args, flaggedGenres: [] })[0].score;
