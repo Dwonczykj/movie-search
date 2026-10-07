@@ -22,17 +22,20 @@
   let timer, ctl;
   q.addEventListener("input", () => {
     clearTimeout(timer);
-    timer = setTimeout(run, 300); // 300ms debounce
+    timer = setTimeout(run, 300);
   });
   async function run() {
-    ctl?.abort(); // drop the in-flight request if the user kept typing
+    ctl?.abort();
     ctl = new AbortController();
     const text = q.value.trim();
     if (!text) { grid.innerHTML = meta.textContent = ""; return; }
     try {
       const r = await fetch("/api/search?q=" + encodeURIComponent(text), { signal: ctl.signal });
-      const { results, decision, ms, error } = await r.json();
-      meta.textContent = error ? error : `${results.length} results in ${ms}ms · title-ness ${(decision.title * 100).toFixed(0)}%${decision.genre ? " · genre " + decision.genre : ""}`;
+      const { results, titleProbability, flaggedGenres = [], degraded, ms } = await r.json();
+      const parts = [`${results.length} results in ${ms}ms`, `title ${(titleProbability * 100).toFixed(0)}%`];
+      if (flaggedGenres.length) parts.push(flaggedGenres.join(", "));
+      if (degraded) parts.push("degraded");
+      meta.textContent = parts.join(" · ");
       grid.innerHTML = results.map((m) => `<div class="card"><img loading="lazy" src="${esc(m.poster)}"><b>${esc(m.title)}</b><small>${m.year} · ★ ${m.rating}</small><p>${esc(m.overview)}</p></div>`).join("");
     } catch (e) { if (e.name !== "AbortError") meta.textContent = e.message; }
   }
