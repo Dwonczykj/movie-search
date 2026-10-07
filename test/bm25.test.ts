@@ -21,3 +21,10 @@ test("caps the hit list at `limit` even when more documents match the query", ()
   const hits = bm25({ query: "cats", limit: 2 });
   assert.equal(hits.length, 2);
 });
+
+test("orders matching documents by descending score", () => {
+  const bm25 = makeBm25({ docs: ["cats among many other unrelated words here", "cats cats", "dogs only"] });
+  const hits = bm25({ query: "cats", limit: 10 });
+  assert.deepEqual(hits.map((hit) => hit.index), [1, 0]);
+  assert.ok(hits[0].score > hits[1].score);
+});

@@ -32,11 +32,8 @@
     try {
       const r = await fetch("/api/search?q=" + encodeURIComponent(text), { signal: ctl.signal });
       const { results, titleProbability, flaggedGenres = [], degraded, ms } = await r.json();
-      const parts = [`${results.length} results in ${ms}ms`, `title ${(titleProbability * 100).toFixed(0)}%`];
-      if (flaggedGenres.length) parts.push(flaggedGenres.join(", "));
-      if (degraded) parts.push("degraded");
-      meta.textContent = parts.join(" · ");
-      grid.innerHTML = results.map((m) => `<div class="card"><img loading="lazy" src="${esc(m.poster)}"><b>${esc(m.title)}</b><small>${m.year} · ★ ${m.rating}</small><p>${esc(m.overview)}</p></div>`).join("");
+      meta.textContent = [`${results.length} results in ${ms}ms`, `title ${(titleProbability * 100).toFixed(0)}%`, flaggedGenres.join(", "), degraded ? "degraded" : ""].filter(Boolean).join(" · ");
+      grid.innerHTML = results.map((m) => `<div class="card"><img loading="lazy" src="${esc(m.poster)}"><b>${esc(m.title)}</b><small>${esc(m.year)} · ★ ${esc(String(m.rating))}</small><p>${esc(m.overview)}</p></div>`).join("");
     } catch (e) { if (e.name !== "AbortError") meta.textContent = e.message; }
   }
 </script>

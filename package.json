@@ -4,7 +4,7 @@
   "scripts": {
     "index": "node --env-file=.env build-index.ts",
     "start": "node --env-file=.env server.ts",
-    "test": "node --experimental-test-module-mocks --test"
+    "test": "node --test"
   },
   "dependencies": {
     "zod": "^3.25.76"

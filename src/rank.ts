@@ -5,11 +5,14 @@ const TOP = 50;
 
 type Ranked = { index: number; score: number };
 
-const rrf = ({ ranking, weight }: { ranking: Ranked[]; weight: number }): Map<number, number> =>
-  ranking.slice(0, TOP).reduce((m, { index }, rank) => m.set(index, (m.get(index) ?? 0) + weight / (K + rank + 1)), new Map<number, number>());
+const rrf = ({ ranking, weight }: { ranking: Ranked[]; weight: number }): Ranked[] =>
+  ranking.slice(0, TOP).map(({ index }, rank) => ({ index, score: weight / (K + rank + 1) }));
 
-const merge = (a: Map<number, number>, b: Map<number, number>): Map<number, number> =>
-  [...b].reduce((m, [index, score]) => m.set(index, (m.get(index) ?? 0) + score), new Map(a));
+const sumByIndex = (entries: Ranked[]): Ranked[] =>
+  Object.entries(Object.groupBy(entries, ({ index }) => index)).map(([index, group]) => ({
+    index: Number(index),
+    score: (group ?? []).reduce((sum, { score }) => sum + score, 0),
+  }));
 
 export const fuse = ({
   lexical,
@@ -29,10 +32,10 @@ export const fuse = ({
   const lexWeight = 0.25 + 0.75 * titleProbability;
   const semWeight = 1.25 - lexWeight;
   const boost = 1 + 0.5 * (1 - titleProbability);
-  const fused = merge(rrf({ ranking: lexical, weight: lexWeight }), rrf({ ranking: semantic, weight: semWeight }));
+  const fused = sumByIndex([...rrf({ ranking: lexical, weight: lexWeight }), ...rrf({ ranking: semantic, weight: semWeight })]);
   const flagged = new Set(flaggedGenres);
-  return [...fused]
-    .map(([index, score]) => {
+  return fused
+    .map(({ index, score }) => {
       const hits = movies[index].genres.filter((g) => flagged.has(g)).length;
       return { index, score: score * boost ** hits };
     })

@@ -6,7 +6,6 @@ test("pins the exact lexWeight/semWeight formula at a non-edge, non-midpoint tit
   const args = { titleProbability: 0.6, flaggedGenres: [], movies: [{ genres: [] }], limit: 10 };
   const lexOnly = fuse({ ...args, lexical: [{ index: 0, score: 1 }], semantic: [] })[0].score;
   const semOnly = fuse({ ...args, lexical: [], semantic: [{ index: 0, score: 1 }] })[0].score;
-  // lexWeight = 0.25 + 0.75 * 0.6 = 0.7, semWeight = 1.25 - 0.7 = 0.55
   assert.ok(Math.abs(lexOnly - 0.7 / 61) < 1e-9);
   assert.ok(Math.abs(semOnly - 0.55 / 61) < 1e-9);
 });

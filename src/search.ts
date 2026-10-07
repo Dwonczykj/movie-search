@@ -1,21 +1,23 @@
 import type { Movie } from "./csv.ts";
 import { fuse, cosineTop } from "./rank.ts";
-import { askClef, embedTexts, DIM } from "./workers-ai.ts";
+import { DIM } from "./workers-ai.ts";
+import type { askClef, embedTexts } from "./workers-ai.ts";
 
 const TIMEOUT_MS = 2000;
 
-type Index = {
-  movies: Movie[];
-  vectors: Float32Array;
-  genres: string[];
-  bm25: (args: { query: string; limit: number }) => { index: number; score: number }[];
-};
-
-export const search = async ({ query, index }: { query: string; index: Index }):
+export const search = async ({ query, index, ai }: {
+  query: string;
+  index: {
+    movies: Movie[];
+    vectors: Float32Array;
+    genres: string[];
+    bm25: (args: { query: string; limit: number }) => { index: number; score: number }[];
+  };
+  ai: { askClef: typeof askClef; embedTexts: typeof embedTexts } }):
   Promise<{ results: Movie[]; titleProbability: number; flaggedGenres: string[]; degraded: boolean }> => {
   const [clef, embed] = await Promise.all([
-    askClef({ query, genres: index.genres, timeoutMs: TIMEOUT_MS }),
-    embedTexts({ texts: [query], timeoutMs: TIMEOUT_MS }),
+    ai.askClef({ query, genres: index.genres, timeoutMs: TIMEOUT_MS }),
+    ai.embedTexts({ texts: [query], timeoutMs: TIMEOUT_MS }),
   ]);
   if (!clef.ok) console.warn(`clef failed, using neutral weights: ${clef.error}`);
   if (!embed.ok) console.warn(`embedding failed, bm25 only: ${embed.error}`);

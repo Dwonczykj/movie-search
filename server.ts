@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import type { Movie } from "./src/csv.ts";
 import { makeBm25 } from "./src/bm25.ts";
 import { search } from "./src/search.ts";
+import { askClef, embedTexts } from "./src/workers-ai.ts";
 
 const PORT = 3000;
 
@@ -12,12 +13,13 @@ const vectors = new Float32Array(buffer.buffer, buffer.byteOffset, buffer.byteLe
 const genres = [...new Set(movies.flatMap((m) => m.genres))].sort();
 const bm25 = makeBm25({ docs: movies.map((m) => `${m.title} ${m.title} ${m.genres.join(" ")} ${m.overview}`) });
 const index = { movies, vectors, genres, bm25 };
+const ai = { askClef, embedTexts };
 const page = await readFile("public/index.html");
 
 const handleSearch = async (query: string): Promise<string> => {
   if (!query) return JSON.stringify({ results: [] });
   const start = performance.now();
-  const out = await search({ query, index });
+  const out = await search({ query, index, ai });
   return JSON.stringify({ ...out, ms: Math.round(performance.now() - start) });
 };
 
